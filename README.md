@@ -9,6 +9,8 @@ A forward-facing VL53L4CD time-of-flight ranging sensor is used for look-ahead
 
 ## Pin Descriptions
 
+![Pin diagram](pins.png)
+
 | STM32F446RE Pin number | Configuration | Name | Description |
 |------------|---------------|----------|-------------|
 | | PWM Output | LMotor_A | Left motor PWM signal 1 |
