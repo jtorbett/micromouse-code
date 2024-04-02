@@ -81,6 +81,8 @@ void Error_Handler(void);
 #define SW1_GPIO_Port GPIOA
 #define SW2_Pin GPIO_PIN_1
 #define SW2_GPIO_Port GPIOA
+#define MOTOR_FAULT_Pin GPIO_PIN_2
+#define MOTOR_FAULT_GPIO_Port GPIOA
 #define VBATT_MON_Pin GPIO_PIN_4
 #define VBATT_MON_GPIO_Port GPIOA
 #define ICM_42688_INT1_Pin GPIO_PIN_6
@@ -109,6 +111,8 @@ void Error_Handler(void);
 #define RMOTOR_A_GPIO_Port GPIOC
 #define RMOTOR_B_Pin GPIO_PIN_9
 #define RMOTOR_B_GPIO_Port GPIOC
+#define BT_COMMAND_MODE_Pin GPIO_PIN_8
+#define BT_COMMAND_MODE_GPIO_Port GPIOA
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14

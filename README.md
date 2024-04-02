@@ -28,7 +28,7 @@ A forward-facing VL53L4CD time-of-flight ranging sensor is used for look-ahead
 | 13       | VDDA             | Power   |                  |                  |                                        |
 | 14       | PA0-WKUP         | I/O     | SYS_WKUP0        | SW1              | Switch 1, momentary push-button input  |
 | 15       | PA1              | Input   | GPIO_Input       | SW2              | Switch 2, momentary push-button input  |
-| 16       | PA2              | I/O     |                  |                  |                                        |
+| 16       | PA2              | Inpu    | GPIO_Input       | MOTOR_FAULT      | Motor fault                            |
 | 17       | PA3              | I/O     |                  |                  |                                        |
 | 18       | VSS              | Power   |                  |                  |                                        |
 | 19       | VDD              | Power   |                  |                  |                                        |
@@ -53,7 +53,7 @@ A forward-facing VL53L4CD time-of-flight ranging sensor is used for look-ahead
 | 38       | PC7              | I/O     | TIM8_CH2         | LMOTOR_B         | Left motor PWM signal 2                |
 | 39       | PC8              | I/O     | TIM8_CH3         | RMOTOR_A         | Right motor PWM signal 1               |
 | 40       | PC9              | I/O     | TIM8_CH4         | RMOTOR_B         | Right motor PWM signal 2               |
-| 41       | PA8              | I/O     |                  |                  |                                        |
+| 41       | PA8              | Output  | GPIO_Output      | BT_COMMAND_MODE  | Bluetooth command mode                 |
 | 42       | PA9              | I/O     | USART1_TX        |                  | Remote Serial/bootloader TX            |
 | 43       | PA10             | I/O     | USART1_RX        |                  | Remote Serial/bootloader RX            |
 | 44       | PA11             | I/O     |                  |                  |                                        |

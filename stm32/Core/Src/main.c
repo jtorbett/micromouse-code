@@ -526,6 +526,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, IR_FRONT_L_PULSE_Pin|IR_FRONT_R_PULSE_Pin|IR_L_PULSE_Pin|ICM_42688_CS_Pin
                           |IR_R_PULSE_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(BT_COMMAND_MODE_GPIO_Port, BT_COMMAND_MODE_Pin, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : VL53L4CD_INT_Pin */
   GPIO_InitStruct.Pin = VL53L4CD_INT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
@@ -546,11 +549,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : SW2_Pin */
-  GPIO_InitStruct.Pin = SW2_Pin;
+  /*Configure GPIO pins : SW2_Pin MOTOR_FAULT_Pin */
+  GPIO_InitStruct.Pin = SW2_Pin|MOTOR_FAULT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(SW2_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : ICM_42688_INT1_Pin ICM_42688_INT2_Pin */
   GPIO_InitStruct.Pin = ICM_42688_INT1_Pin|ICM_42688_INT2_Pin;
@@ -566,6 +569,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : BT_COMMAND_MODE_Pin */
+  GPIO_InitStruct.Pin = BT_COMMAND_MODE_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(BT_COMMAND_MODE_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
