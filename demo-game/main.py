@@ -10,7 +10,7 @@ import pygame.font
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
-max_speed = 1000
+max_speed = 500
 
 
 class DemoController:
@@ -130,6 +130,7 @@ def main():
     victory = False
     failure = False
     lsd = False
+    mouse_view_mode = False
     non_render_count = 0
 
     left_response = 0
@@ -157,7 +158,14 @@ def main():
             victory = False
             start_time = time.time() + 5
 
-        if keys[pygame.K_p]:
+        if keys[pygame.K_ESCAPE]:
+            running = False
+
+        if keys[pygame.K_v]:
+            if not lsd:
+                mouse_view_mode = not mouse_view_mode
+                lsd = True
+        elif keys[pygame.K_p]:
             if not lsd:
                 if controller is None:
                     controller = DemoController()
@@ -252,30 +260,41 @@ def main():
         should_render = render_dt == 0 or render_dt >= 1/60
 
         if should_render:
-            render(dots, font, left_response, lines, mouse, mouse_draw_pos, right_response, score, screen, speed_1, speed_2, victory, failure, start_time)
+            render(dots, font, left_response, lines, mouse, mouse_draw_pos, right_response, score, screen, speed_1, speed_2, victory, failure, start_time, mouse_view_mode)
 
             render_dt = 0
             non_render_count = 0
 
-        dt = clock.tick(1000) / 1000
+        dt = clock.tick(200) / 1000
 
     pygame.quit()
 
 
-def render(dots, font, left_response, lines, mouse, mouse_draw_pos, right_response, score, screen, speed_1, speed_2, victory, failure, start_time):
+def render(dots, font, left_response, lines, mouse, mouse_draw_pos, right_response, score, screen, speed_1, speed_2, victory, failure, start_time, mouse_view_mode):
     # fill the screen with a color to wipe away anything from last frame
     screen.fill("#1C1E26")
     for dot in dots:
         pygame.draw.circle(screen, "grey", dot + mouse_draw_pos, radius=1)
     screen.blit(mouse, mouse.get_rect(center=mouse_draw_pos).topleft)
     for start, end, hidden in lines:
-        pygame.draw.line(screen, "black" if hidden else "red", start + mouse_draw_pos, end + mouse_draw_pos, width=8)
+        if mouse_view_mode:
+            ms = pygame.Vector2(start.x, start.y + abs(start.x/2))
+            me = pygame.Vector2(end.x, end.y + abs(end.x/2))
+            pygame.draw.line(screen, "black" if hidden else "red", ms + mouse_draw_pos, me + mouse_draw_pos, width=8)
+        else:
+            pygame.draw.line(screen, "black" if hidden else "red", start + mouse_draw_pos, end + mouse_draw_pos, width=8)
 
     if left_response:
-        dot = pygame.Vector2(-20 - (1-left_response) * 180, (-20 - (1-left_response) * 180) / 2)
+        if mouse_view_mode:
+            dot = pygame.Vector2(-20 - (1-left_response) * 180, 0)
+        else:
+            dot = pygame.Vector2(-20 - (1-left_response) * 180, (-20 - (1-left_response) * 180) / 2)
         pygame.draw.circle(screen, "green", dot + mouse_draw_pos, radius=4)
     if right_response:
-        dot = pygame.Vector2(20 + (1-right_response) * 180, (-20 - (1-right_response) * 180) / 2)
+        if mouse_view_mode:
+            dot = pygame.Vector2(20 + (1-right_response) * 180, 0)
+        else:
+            dot = pygame.Vector2(20 + (1-right_response) * 180, (-20 - (1-right_response) * 180) / 2)
         pygame.draw.circle(screen, "green", dot + mouse_draw_pos, radius=4)
 
     pygame.draw.rect(screen, "white", pygame.Rect(10, 10, 20, 500 + 1), width=1)
