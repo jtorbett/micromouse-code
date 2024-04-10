@@ -7,6 +7,7 @@ from typing import Tuple, Deque
 
 import pygame
 import pygame.font
+import serial
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
@@ -67,11 +68,7 @@ class DemoController:
 
 class SerialPortController:
     def __init__(self):
-        try:
-            self.serial_port = serial.Serial("/dev/tacho", baudrate=115200)
-            self.serial_port.open()
-        except:
-            self.serial_port = None
+        self.serial_port = serial.Serial("/dev/tty.usbmodem2103", baudrate=115200)
         self.rx_data: bytearray = bytearray()
 
     def update(self, left_signal, right_signal) -> Tuple[float, float]:
@@ -80,8 +77,8 @@ class SerialPortController:
 
         if self.serial_port is not None:
             tx_data = bytes([
-                math.floor(left_signal * 254) + 1,
-                math.floor(right_signal * 254) + 1,
+                max(0, min(255, math.floor(left_signal * 254) + 1)),
+                max(0, min(255, math.floor(right_signal * 254) + 1)),
                 0,
                 ])
             self.serial_port.write(tx_data)
@@ -136,7 +133,7 @@ def main():
     left_response = 0
     right_response = 0
 
-    controller = None
+    controller = SerialPortController()
 
     start_time = time.time() + 5
 
@@ -168,22 +165,23 @@ def main():
         elif keys[pygame.K_p]:
             if not lsd:
                 if controller is None:
-                    controller = DemoController()
+                    controller = SerialPortController()
                 else:
                     controller = None
                 lsd = True
         else:
             lsd = False
 
+        speed_1, speed_2 = 0, 0
         if controller is not None:
             speed_1, speed_2 = controller.update(left_response, right_response)
             speeds.append((min(1., max(-1., speed_1)), min(1., max(-1., speed_2))))
 
-        while len(speeds) > 30:
-            speeds.popleft()
-
-        speed_1 = sum(speed[0] for speed in speeds) / 30
-        speed_2 = sum(speed[1] for speed in speeds) / 30
+        # while len(speeds) > 30:
+        #     speeds.popleft()
+        #
+        # speed_1 = sum(speed[0] for speed in speeds) / 30
+        # speed_2 = sum(speed[1] for speed in speeds) / 30
 
         if time.time() < start_time:
             speed_1 = 0
