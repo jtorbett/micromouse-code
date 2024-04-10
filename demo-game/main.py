@@ -10,7 +10,7 @@ import pygame.font
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
-max_speed = 500
+max_speed = 1000
 
 
 class DemoController:
@@ -97,7 +97,7 @@ class SerialPortController:
 
 def score_eq(distance, time_taken) -> float:
     speed = distance / time_taken if time_taken else 0
-    return math.floor(distance / 7.23 * speed / max_speed)
+    return math.floor(distance / 7.23 * speed / 500)
 
 
 def main():
