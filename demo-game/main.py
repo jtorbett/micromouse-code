@@ -13,6 +13,46 @@ BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 max_speed = 500
 
+class ZoeController:
+    def __init__(self):
+        self._last_left_signal = 0
+        self._last_right_signal = 0
+        self._last_ratio = 0
+        self._p = 1.6
+        self._i = 0.02
+        self._iratio = 0
+        self._d = 120
+        self._change = 0
+
+    def update(self, left_signal, right_signal) -> Tuple[float, float]:
+        print(f"left {left_signal} right {right_signal}")
+        print(left_signal - right_signal)
+
+        # TODO - solve crashing into one wall when too close
+        # When crashed into left side- left signal > 1
+        # to solve at a certain threshold, turn off/ reverse opposite wheel
+
+        # TODO- solve one wall not being present
+
+        left_speed = 0.1
+        right_speed = 0.1
+
+        if left_signal < 0.9:
+            left_speed = left_signal * 1.5
+        if right_signal < 0.9:
+            right_speed = right_signal * 1.5
+
+        if left_signal >= 0.9:
+            right_speed = -0.1
+
+        if right_signal >= 0.9:
+            left_speed = -0.1
+
+        if left_signal == 0 and right_signal == 0:
+            left_speed, right_speed = 2, 2
+
+        return left_speed, right_speed
+
 
 class DemoController:
     def __init__(self):
@@ -132,8 +172,8 @@ def main():
 
     left_response = 0
     right_response = 0
-
-    controller = SerialPortController()
+    # TODO your controller here
+    controller = ZoeController()
 
     start_time = time.time() + 5
 
