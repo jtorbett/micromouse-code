@@ -68,7 +68,7 @@ class DemoController:
 
 class SerialPortController:
     def __init__(self):
-        self.serial_port = serial.Serial("/dev/tty.usbmodem2103", baudrate=115200)
+        self.serial_port = serial.Serial("/dev/tty.usbmodem11303", baudrate=115200)
         self.rx_data: bytearray = bytearray()
 
     def update(self, left_signal, right_signal) -> Tuple[float, float]:
@@ -263,7 +263,7 @@ def main():
             render_dt = 0
             non_render_count = 0
 
-        dt = clock.tick(200) / 1000
+        dt = clock.tick(1000) / 1000
 
     pygame.quit()
 

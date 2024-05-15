@@ -116,6 +116,10 @@ int main(void)
 
   uint8_t rx_buff[3] = {0};
   uint8_t tx_buff[3] = {0};
+  uint8_t buf_idx = 0;
+  uint8_t left_sensor = 0;
+  uint8_t right_sensor = 0;
+  uint8_t new_data = 0;
 
   /* USER CODE END 2 */
 
@@ -124,20 +128,29 @@ int main(void)
   while (1)
   {
 
-	  if(HAL_UART_Receive(&huart2, rx_buff, 3, 100)==HAL_OK) //if transfer is successful
-	  	    {
-	  		  if (rx_buff[2] == 0) {
-	  			  htim1.Instance->CCR1 = rx_buff[0];
-	  			  htim1.Instance->CCR2 = rx_buff[1];
-	  		  }
+	  if(HAL_UART_Receive(&huart2, &rx_buff[buf_idx], 1, 100)==HAL_OK) { //if transfer is successful
+		  if (rx_buff[buf_idx] == 0) {
+			  if (buf_idx == 2) {
+				  left_sensor = rx_buff[0];
+				  right_sensor = rx_buff[1];
+				  new_data = 1;
+			  }
+			  buf_idx = 0;
+		  } else {
+			  buf_idx += 1;
+		  }
+	  }
 
-	  		  uint8_t motor1 = (uint8_t)((htim3.Instance->CCR2 << 8) / htim3.Instance->CCR1);
-	  		  uint8_t motor2 = (uint8_t)((htim4.Instance->CCR2 << 8) / htim4.Instance->CCR1);
-	  		  tx_buff[0] = motor1 / 2 + 128;
-	  		  tx_buff[1] = motor2 / 2 + 128;
-	  	      HAL_UART_Transmit(&huart2, tx_buff, 3, 10);
-	  	    }
+	  if (new_data) {
+		  // Do something with left_sensor/right_sensor here
 
+
+
+		  tx_buff[0] = left_sensor / 2 + 128;
+		  tx_buff[1] = right_sensor / 2 + 128;
+		  HAL_UART_Transmit(&huart2, tx_buff, 3, 10);
+		  new_data = 0;
+	  }
 
     /* USER CODE END WHILE */
 
@@ -283,7 +296,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 7;
+  htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -356,7 +369,7 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 7;
+  htim4.Init.Prescaler = 0;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 65535;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
