@@ -3,6 +3,7 @@ import os
 import random
 import time
 from collections import deque
+from copy import copy
 from typing import Tuple, Deque
 
 import pygame
@@ -91,6 +92,43 @@ class SerialPortController:
 
         return speed_1, speed_2
 
+def dup(n, times):
+    return [copy(n) for i in range(times)]
+
+
+def clamp(_input):
+    return max(min(_input, 1), 0)
+
+class Maze:
+    def __init__(self, filename):
+        self._left_walls = dup(dup(False, 15), 16)
+        self._bottom_walls = dup(dup(False, 16), 15)
+
+        #TODO: Load a maze in .maze format
+        with open(filename, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            for row, line in enumerate(lines):
+                if not 1 <= row <= 31:
+                    continue
+                for col, char in enumerate(line):
+                    if not 1 <= col <= 31:
+                        continue
+                    if (col % 2) == (row % 2):
+                        continue
+                    if char == '|':
+                        cell_x = (col - 2) // 2
+                        cell_y = row // 2
+                        self._left_walls[cell_y][cell_x] = True
+                    if char == '-':
+                        cell_x = col // 2
+                        cell_y = (row - 2) // 2
+                        self._bottom_walls[cell_y][cell_x] = True
+
+    def walls(self):
+        pass
+
+    def update(self):
+        pass
 
 def score_eq(distance, time_taken) -> float:
     speed = distance / time_taken if time_taken else 0
@@ -121,6 +159,8 @@ def main():
         for _i in range(400)
     ]
 
+    maze = Maze(os.path.join(BASE_PATH, "2011uk-techfest.maze"))
+
     lines = build_lines()
 
     font = pygame.font.Font(None, 64)
@@ -133,7 +173,7 @@ def main():
     left_response = 0
     right_response = 0
 
-    controller = SerialPortController()
+    controller = DemoController()
 
     start_time = time.time() + 5
 
@@ -165,7 +205,7 @@ def main():
         elif keys[pygame.K_p]:
             if not lsd:
                 if controller is None:
-                    controller = SerialPortController()
+                    controller = DemoController()
                 else:
                     controller = None
                 lsd = True
@@ -174,14 +214,15 @@ def main():
 
         speed_1, speed_2 = 0, 0
         if controller is not None:
-            speed_1, speed_2 = controller.update(left_response, right_response)
-            speeds.append((min(1., max(-1., speed_1)), min(1., max(-1., speed_2))))
+            speed_1, speed_2 = map(clamp, controller.update(left_response, right_response))
 
-        # while len(speeds) > 30:
-        #     speeds.popleft()
-        #
-        # speed_1 = sum(speed[0] for speed in speeds) / 30
-        # speed_2 = sum(speed[1] for speed in speeds) / 30
+        if isinstance(controller, DemoController):
+            speeds.append((speed_1, speed_2))
+            while len(speeds) > 30:
+                speeds.popleft()
+
+            speed_1 = sum(speed[0] for speed in speeds) / 30
+            speed_2 = sum(speed[1] for speed in speeds) / 30
 
         if time.time() < start_time:
             speed_1 = 0
