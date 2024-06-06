@@ -3,12 +3,13 @@ import os
 import random
 import time
 from collections import deque
-from copy import copy
 from typing import Tuple, Deque
 
 import pygame
 import pygame.font
 import serial
+
+from maze import ObstacleCourse, Maze
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
@@ -66,6 +67,13 @@ class DemoController:
         self._last_ratio = ratio
         return speed_1, speed_2
 
+    def reset(self):
+        self._last_left_signal = 0
+        self._last_right_signal = 0
+        self._last_ratio = 0
+        self._iratio = 0
+        self._change = 0
+
 
 class SerialPortController:
     def __init__(self):
@@ -92,43 +100,12 @@ class SerialPortController:
 
         return speed_1, speed_2
 
-def dup(n, times):
-    return [copy(n) for i in range(times)]
-
+    def reset(self):
+        pass
 
 def clamp(_input):
     return max(min(_input, 1), 0)
 
-class Maze:
-    def __init__(self, filename):
-        self._left_walls = dup(dup(False, 15), 16)
-        self._bottom_walls = dup(dup(False, 16), 15)
-
-        #TODO: Load a maze in .maze format
-        with open(filename, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            for row, line in enumerate(lines):
-                if not 1 <= row <= 31:
-                    continue
-                for col, char in enumerate(line):
-                    if not 1 <= col <= 31:
-                        continue
-                    if (col % 2) == (row % 2):
-                        continue
-                    if char == '|':
-                        cell_x = (col - 2) // 2
-                        cell_y = row // 2
-                        self._left_walls[cell_y][cell_x] = True
-                    if char == '-':
-                        cell_x = col // 2
-                        cell_y = (row - 2) // 2
-                        self._bottom_walls[cell_y][cell_x] = True
-
-    def walls(self):
-        pass
-
-    def update(self):
-        pass
 
 def score_eq(distance, time_taken) -> float:
     speed = distance / time_taken if time_taken else 0
@@ -159,9 +136,8 @@ def main():
         for _i in range(400)
     ]
 
-    maze = Maze(os.path.join(BASE_PATH, "2011uk-techfest.maze"))
-
-    lines = build_lines()
+    #maze = Maze(os.path.join(BASE_PATH, "2011uk-techfest.maze"))
+    maze = ObstacleCourse()
 
     font = pygame.font.Font(None, 64)
     victory = False
@@ -177,6 +153,8 @@ def main():
 
     start_time = time.time() + 5
 
+    maze.reset()
+
     while running:
         # poll for events
         # pygame.QUIT event means the user clicked X to close your window
@@ -190,7 +168,8 @@ def main():
             player_pos = pygame.Vector2(0, 0)
             player_angle = 0
             player_heading = pygame.Vector2(1, 0)
-            lines = build_lines()
+            maze.reset()
+            controller.reset()
             failure = False
             victory = False
             start_time = time.time() + 5
@@ -255,43 +234,21 @@ def main():
             elif dot.y > 1000:
                 dot.y -= 2000
 
-        negative_intersect = 1000000
-        positive_intersect = 1000000
-        left_hidden = False
-        right_hidden = False
-        for start, end, hidden in lines:
-            start.rotate_ip_rad(-angle_change)
-            start.y += robot_velocity
-            end.rotate_ip_rad(-angle_change)
-            end.y += robot_velocity
+        maze.update(angle_change, robot_velocity)
 
-            ms = pygame.Vector2(start.x, start.y + abs(start.x/2))
-            me = pygame.Vector2(end.x, end.y + abs(end.x/2))
-
-            if me.y < 0 <= ms.y or ms.y < 0 <= me.y:
-                y_ratio = (-ms.y) / (me.y - ms.y)
-                x_intersect = (me.x - ms.x) * y_ratio + ms.x
-                if x_intersect < 0:
-                    x_intersect *= -1
-                    if x_intersect < negative_intersect:
-                        negative_intersect = x_intersect
-                        left_hidden = hidden
-                else:
-                    if x_intersect < positive_intersect:
-                        positive_intersect = x_intersect
-                        right_hidden = hidden
+        left_distance, right_distance = maze.sensor_distances()
 
         if player_pos.y < -72300:
             victory = True
-        if negative_intersect < (10 if left_hidden else 20) or positive_intersect < (10 if right_hidden else 20):
+        if left_distance < 10 or right_distance < 10:
             failure = True
 
         left_response = 0
         right_response = 0
-        if negative_intersect < 200 and not left_hidden:
-            left_response = (200 - negative_intersect) / 180
-        if positive_intersect < 200 and not right_hidden:
-            right_response = (200 - positive_intersect) / 180
+        if left_distance < 500:
+            left_response = (500 - left_distance) / 480
+        if right_distance < 500:
+            right_response = (500 - right_distance) / 480
 
         render_dt += dt
         non_render_count += 1
@@ -299,7 +256,7 @@ def main():
         should_render = render_dt == 0 or render_dt >= 1/60
 
         if should_render:
-            render(dots, font, left_response, lines, mouse, mouse_draw_pos, right_response, score, screen, speed_1, speed_2, victory, failure, start_time, mouse_view_mode)
+            render(dots, font, left_response, maze, mouse, mouse_draw_pos, right_response, score, screen, speed_1, speed_2, victory, failure, start_time, mouse_view_mode)
 
             render_dt = 0
             non_render_count = 0
@@ -309,31 +266,26 @@ def main():
     pygame.quit()
 
 
-def render(dots, font, left_response, lines, mouse, mouse_draw_pos, right_response, score, screen, speed_1, speed_2, victory, failure, start_time, mouse_view_mode):
+def render(dots, font, left_response, maze, mouse, mouse_draw_pos, right_response, score, screen, speed_1, speed_2, victory, failure, start_time, mouse_view_mode):
     # fill the screen with a color to wipe away anything from last frame
     screen.fill("#1C1E26")
     for dot in dots:
         pygame.draw.circle(screen, "grey", dot + mouse_draw_pos, radius=1)
     screen.blit(mouse, mouse.get_rect(center=mouse_draw_pos).topleft)
-    for start, end, hidden in lines:
-        if mouse_view_mode:
-            ms = pygame.Vector2(start.x, start.y + abs(start.x/2))
-            me = pygame.Vector2(end.x, end.y + abs(end.x/2))
-            pygame.draw.line(screen, "black" if hidden else "red", ms + mouse_draw_pos, me + mouse_draw_pos, width=8)
-        else:
-            pygame.draw.line(screen, "black" if hidden else "red", start + mouse_draw_pos, end + mouse_draw_pos, width=8)
+
+    maze.render(screen, mouse_draw_pos, mouse_view_mode)
 
     if left_response:
         if mouse_view_mode:
-            dot = pygame.Vector2(-20 - (1-left_response) * 180, 0)
+            dot = pygame.Vector2(-20 - (1-left_response) * 480, 0)
         else:
-            dot = pygame.Vector2(-20 - (1-left_response) * 180, (-20 - (1-left_response) * 180) / 2)
+            dot = pygame.Vector2(-20 - (1-left_response) * 480, (-20 - (1-left_response) * 480) / 2)
         pygame.draw.circle(screen, "green", dot + mouse_draw_pos, radius=4)
     if right_response:
         if mouse_view_mode:
-            dot = pygame.Vector2(20 + (1-right_response) * 180, 0)
+            dot = pygame.Vector2(20 + (1-right_response) * 480, 0)
         else:
-            dot = pygame.Vector2(20 + (1-right_response) * 180, (-20 - (1-right_response) * 180) / 2)
+            dot = pygame.Vector2(20 + (1-right_response) * 480, (-20 - (1-right_response) * 480) / 2)
         pygame.draw.circle(screen, "green", dot + mouse_draw_pos, radius=4)
 
     pygame.draw.rect(screen, "white", pygame.Rect(10, 10, 20, 500 + 1), width=1)
@@ -354,54 +306,6 @@ def render(dots, font, left_response, lines, mouse, mouse_draw_pos, right_respon
     textpos = text.get_rect(right=screen.get_width() - 10, y=10)
     screen.blit(text, textpos)
     pygame.display.flip()
-
-def build_lines():
-    width = 120
-    last_center = pygame.Vector2(0, 100)
-    last_1 = pygame.Vector2(-width, 100)
-    last_2 = pygame.Vector2(width, 100)
-    step_size = 50
-    lines = [(pygame.Vector2(-width, 100), pygame.Vector2(width, 100), True)]
-    for i in range(1500):
-        x = i * math.sin(i ** (1.1 + 0.2 * math.sin(i / 50)) / 100) * math.sin((i ** 1.25) / 77)
-        center = pygame.Vector2(x, -i * step_size)
-        _distance, angle = (center - last_center).as_polar()
-        center = last_center + pygame.Vector2.from_polar((step_size, angle))
-        new1 = pygame.Vector2.from_polar((width, angle - 90)) + center
-        new2 = pygame.Vector2.from_polar((width, angle + 90)) + center
-
-        left_hidden = False
-        right_hidden = False
-        if i >= 1497:
-            left_hidden = True
-            right_hidden = True
-
-        if 501 == i:
-            left_hidden = True
-            right_hidden = True
-
-        if i > 999:
-            left_hidden = (i % 89) < 4
-            right_hidden = (i % 67) < 4
-
-        lines.append((last_1.copy(), new1, left_hidden))
-        lines.append((last_2.copy(), new2, right_hidden))
-        last_1 = new1
-        last_2 = new2
-        last_center = center
-        if 420 < i <= 460:
-            width -= 2  # Shrink by 80
-        if 500 == i:
-            width += 400  # Grow by 200
-        if 530 < i <= 550:
-            width -= 19  # Shrink by 380
-        if 600 < i <= 1497:
-            width += 0.6 * math.sin(i / 20)  # Pulsate
-
-        if 1497 < i <= 1500:
-            width = 0  # Completely disappear
-
-    return lines
 
 
 if __name__ == '__main__':
